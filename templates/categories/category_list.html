@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Categories{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">Book Categories <small>Classification & Shelving</small></h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <span>Categories</span>
+    </div>
+</div>
+
+<!-- TOP ACTIONS & SEARCH -->
+<div class="lms-card mb-4">
+    <div class="lms-card-body">
+        <div class="row g-3 align-items-center justify-content-between">
+            <div class="col-md-6">
+                <form method="get" action="{% url 'category_list' %}">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search categories by name or description...">
+                        <button class="btn btn-primary" type="submit" style="background-color: #0b2d42; border-color: #0b2d42;">Search</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'category_create' %}" class="btn btn-success">
+                    <i class="fa-solid fa-plus me-1"></i>Add New Category
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CATEGORIES GRID & LIST -->
+<div class="row g-4 mb-4">
+    {% for cat in categories %}
+    <div class="col-lg-4 col-md-6">
+        <div class="lms-card h-100 shadow-sm">
+            <div class="lms-card-header d-flex justify-content-between align-items-center">
+                <h5 class="lms-card-title text-dark">
+                    <i class="fa-solid fa-bookmark text-primary me-2"></i>
+                    {{ cat.name }}
+                </h5>
+                <span class="badge bg-primary rounded-pill">{{ cat.book_total }} Books</span>
+            </div>
+            <div class="lms-card-body d-flex flex-direction-column justify-content-between">
+                <p class="text-muted small mb-4">
+                    {{ cat.description|default:"No description provided for this category." }}
+                </p>
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <a href="{% url 'book_list' %}?category={{ cat.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fa-solid fa-eye me-1"></i>View Books
+                    </a>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'category_update' cat.pk %}" class="btn btn-outline-warning" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+                        <a href="{% url 'category_delete' cat.pk %}" class="btn btn-outline-danger" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="lms-card text-center py-5">
+            <i class="fa-solid fa-layer-group fs-1 text-secondary opacity-50 mb-3"></i>
+            <h5>No Categories Found</h5>
+            <p class="text-muted small mb-3">Organize books into genres and departments by adding your first category.</p>
+            <div>
+                <a href="{% url 'category_create' %}" class="btn btn-primary btn-sm" style="background-color: #0b2d42; border-color: #0b2d42;">
+                    <i class="fa-solid fa-plus me-1"></i>Add Category
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
