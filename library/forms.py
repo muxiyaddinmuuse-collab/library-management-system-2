@@ -1,8 +1,11 @@
+import re
+from datetime import date, timedelta
+from decimal import Decimal
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
-from django.utils import timezone
-from datetime import date, timedelta
+from django.core.exceptions import ValidationError
+
 from .models import Category, Book, Member, BorrowRecord
 
 
@@ -14,7 +17,8 @@ class CategoryForm(forms.ModelForm):
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Enter category name (e.g., Computer Science, Literature)',
-                'required': True
+                'required': True,
+                'autocomplete': 'off',
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -22,6 +26,12 @@ class CategoryForm(forms.ModelForm):
                 'rows': 3
             }),
         }
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if len(name) < 2:
+            raise ValidationError("Category name must be at least 2 characters long.")
+        return name
 
 
 class BookForm(forms.ModelForm):
@@ -43,6 +53,38 @@ class BookForm(forms.ModelForm):
             'location_shelf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Shelf A-3, Rack 2'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Brief description or summary of the book...'}),
         }
+
+    def clean_title(self):
+        title = self.cleaned_data.get('title', '').strip()
+        if not title:
+            raise ValidationError("Book title is required.")
+        return title
+
+    def clean_author(self):
+        author = self.cleaned_data.get('author', '').strip()
+        if not author:
+            raise ValidationError("Author name is required.")
+        return author
+
+    def clean_isbn(self):
+        isbn = self.cleaned_data.get('isbn', '').strip().replace(' ', '')
+        if len(isbn) < 5:
+            raise ValidationError("Please provide a valid ISBN (at least 5 characters).")
+        # Check uniqueness excluding current instance
+        qs = Book.objects.filter(isbn__iexact=isbn)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError(f"A book with ISBN '{isbn}' is already registered in the library.")
+        return isbn
+
+    def clean_publication_year(self):
+        year = self.cleaned_data.get('publication_year')
+        if year is not None:
+            current_year = date.today().year
+            if year < 1000 or year > current_year + 1:
+                raise ValidationError(f"Please enter a valid publication year between 1000 and {current_year + 1}.")
+        return year
 
     def clean(self):
         cleaned_data = super().clean()
@@ -69,6 +111,33 @@ class MemberForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
+    def clean_first_name(self):
+        name = self.cleaned_data.get('first_name', '').strip()
+        if not name:
+            raise ValidationError("First name is required.")
+        return name
+
+    def clean_last_name(self):
+        name = self.cleaned_data.get('last_name', '').strip()
+        if not name:
+            raise ValidationError("Last name is required.")
+        return name
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        qs = Member.objects.filter(email=email)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError(f"A member with email '{email}' is already registered.")
+        return email
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '').strip()
+        if len(phone) < 6:
+            raise ValidationError("Phone number must have at least 6 digits.")
+        return phone
+
 
 class BorrowBookForm(forms.ModelForm):
     class Meta:
@@ -84,7 +153,6 @@ class BorrowBookForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter books that have available copies > 0 when creating a new record
         if not self.instance.pk:
             self.fields['book'].queryset = Book.objects.filter(available_copies__gt=0)
             self.fields['member'].queryset = Member.objects.filter(status='Active')
@@ -120,19 +188,36 @@ class ReturnBookForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Return notes (condition of book, etc.)'}),
         }
 
+    def clean_fine_amount(self):
+        fine = self.cleaned_data.get('fine_amount')
+        if fine is not None and fine < Decimal('0.00'):
+            raise ValidationError("Fine amount cannot be negative.")
+        return fine or Decimal('0.00')
+
+    def clean_return_date(self):
+        ret_date = self.cleaned_data.get('return_date')
+        if not ret_date:
+            ret_date = date.today()
+        if self.instance and self.instance.issue_date:
+            if ret_date < self.instance.issue_date:
+                raise ValidationError("Return date cannot be earlier than the book's issue date.")
+        return ret_date
+
 
 class LibrarianLoginForm(AuthenticationForm):
     username = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg',
             'placeholder': 'Username or Email',
-            'autofocus': True
+            'autofocus': True,
+            'autocomplete': 'username',
         })
     )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'form-control form-control-lg',
-            'placeholder': 'Password'
+            'placeholder': 'Password',
+            'autocomplete': 'current-password',
         })
     )
 
@@ -154,6 +239,12 @@ class LibrarianRegisterForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("A user with this email address is already registered.")
+        return email
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

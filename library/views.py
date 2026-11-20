@@ -1,11 +1,14 @@
+from datetime import date, timedelta
+from decimal import Decimal
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import transaction
 from django.db.models import Q, Sum, Count
-from django.utils import timezone
-from datetime import date, timedelta
-from decimal import Decimal
+from django.views.decorators.http import require_http_methods
 
 from .models import Category, Book, Member, BorrowRecord
 from .forms import (
@@ -20,6 +23,10 @@ from .forms import (
 # ==============================================================================
 
 def login_view(request):
+    """
+    Renders the Librarian sign-in page and handles authentication.
+    Redirects already authenticated users directly to the dashboard.
+    """
     if request.user.is_authenticated:
         return redirect('dashboard')
 
@@ -28,9 +35,9 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            messages.success(request, f"Welcome back, {user.first_name or user.username}! You are now logged in.")
+            messages.success(request, f"Welcome back, {user.first_name or user.username}! You are now signed in.")
             next_url = request.GET.get('next')
-            if next_url:
+            if next_url and next_url.startswith('/'):
                 return redirect(next_url)
             return redirect('dashboard')
         else:
@@ -42,13 +49,18 @@ def login_view(request):
 
 
 def logout_view(request):
-    if request.method == 'POST' or request.method == 'GET':
-        logout(request)
-        messages.info(request, "You have been logged out successfully.")
-        return redirect('login')
+    """
+    Logs out the current librarian and redirects to the login screen.
+    """
+    logout(request)
+    messages.info(request, "You have been logged out successfully.")
+    return redirect('login')
 
 
 def register_view(request):
+    """
+    Allows registering a new librarian / staff account.
+    """
     if request.user.is_authenticated:
         return redirect('dashboard')
 
@@ -56,10 +68,10 @@ def register_view(request):
         form = LibrarianRegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            messages.success(request, f"Account created successfully for {user.username}! Please log in.")
+            messages.success(request, f"Staff account created for {user.username}! You may now log in.")
             return redirect('login')
         else:
-            messages.error(request, "Please correct the errors below.")
+            messages.error(request, "Please review and correct the errors below.")
     else:
         form = LibrarianRegisterForm()
 
@@ -68,6 +80,9 @@ def register_view(request):
 
 @login_required
 def profile_view(request):
+    """
+    Displays current librarian profile and account details.
+    """
     return render(request, 'accounts/profile.html', {'user': request.user})
 
 
@@ -77,6 +92,10 @@ def profile_view(request):
 
 @login_required
 def dashboard_view(request):
+    """
+    Main Librarian Control Panel dashboard.
+    Calculates live statistics and displays recent circulation records.
+    """
     today = date.today()
 
     # Dynamic status update for overdue records
@@ -85,7 +104,7 @@ def dashboard_view(request):
     total_members = Member.objects.count()
     active_borrows = BorrowRecord.objects.filter(status='Borrowed').count()
     total_books = Book.objects.count()
-    
+
     copies_stat = Book.objects.aggregate(
         total=Sum('total_copies'),
         available=Sum('available_copies')
@@ -124,42 +143,59 @@ def dashboard_view(request):
 
 @login_required
 def book_list_view(request):
+    """
+    Lists all books with instant search (title, author, ISBN) and filters.
+    Includes pagination for large inventories.
+    """
     query = request.GET.get('q', '').strip()
     category_id = request.GET.get('category', '').strip()
     status_filter = request.GET.get('status', '').strip()
+    page_number = request.GET.get('page', 1)
 
-    books = Book.objects.select_related('category').all()
+    books_qs = Book.objects.select_related('category').all()
 
     if query:
-        books = books.filter(
+        books_qs = books_qs.filter(
             Q(title__icontains=query) |
             Q(author__icontains=query) |
             Q(isbn__icontains=query)
         )
 
     if category_id:
-        books = books.filter(category_id=category_id)
+        books_qs = books_qs.filter(category_id=category_id)
 
     if status_filter == 'available':
-        books = books.filter(available_copies__gt=0)
+        books_qs = books_qs.filter(available_copies__gt=0)
     elif status_filter == 'out_of_stock':
-        books = books.filter(available_copies=0)
+        books_qs = books_qs.filter(available_copies=0)
+
+    # Paginate books (15 per page)
+    paginator = Paginator(books_qs, 15)
+    try:
+        books_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        books_page = paginator.page(1)
+    except EmptyPage:
+        books_page = paginator.page(paginator.num_pages)
 
     categories = Category.objects.all()
 
     context = {
-        'books': books,
+        'books': books_page,
         'categories': categories,
         'query': query,
         'selected_category': category_id,
         'selected_status': status_filter,
-        'total_results': books.count(),
+        'total_results': books_qs.count(),
     }
     return render(request, 'books/book_list.html', context)
 
 
 @login_required
 def book_detail_view(request, pk):
+    """
+    Displays full details of a specific book, including stock and loan history.
+    """
     book = get_object_or_404(Book.objects.select_related('category'), pk=pk)
     borrow_history = book.borrow_records.select_related('member').order_by('-created_at')[:10]
     return render(request, 'books/book_detail.html', {'book': book, 'borrow_history': borrow_history})
@@ -167,14 +203,17 @@ def book_detail_view(request, pk):
 
 @login_required
 def book_create_view(request):
+    """
+    Registers a new book in the library inventory.
+    """
     if request.method == 'POST':
         form = BookForm(request.POST)
         if form.is_valid():
             book = form.save()
-            messages.success(request, f"Book '{book.title}' was successfully registered!")
+            messages.success(request, f"Book '{book.title}' was successfully registered in the catalog!")
             return redirect('book_list')
         else:
-            messages.error(request, "Failed to register book. Please verify the input values.")
+            messages.error(request, "Failed to register book. Please verify all required fields.")
     else:
         form = BookForm()
 
@@ -183,6 +222,9 @@ def book_create_view(request):
 
 @login_required
 def book_update_view(request, pk):
+    """
+    Updates an existing book's information.
+    """
     book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
         form = BookForm(request.POST, instance=book)
@@ -200,6 +242,9 @@ def book_update_view(request, pk):
 
 @login_required
 def book_delete_view(request, pk):
+    """
+    Deletes a book with confirmation.
+    """
     book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
         title = book.title
@@ -215,6 +260,9 @@ def book_delete_view(request, pk):
 
 @login_required
 def category_list_view(request):
+    """
+    Lists all book categories with total book counts and search filter.
+    """
     query = request.GET.get('q', '').strip()
     categories = Category.objects.annotate(book_total=Count('books')).order_by('name')
 
@@ -232,6 +280,9 @@ def category_list_view(request):
 
 @login_required
 def category_create_view(request):
+    """
+    Creates a new book category.
+    """
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
@@ -248,6 +299,9 @@ def category_create_view(request):
 
 @login_required
 def category_update_view(request, pk):
+    """
+    Updates an existing category.
+    """
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
         form = CategoryForm(request.POST, instance=category)
@@ -265,6 +319,9 @@ def category_update_view(request, pk):
 
 @login_required
 def category_delete_view(request, pk):
+    """
+    Deletes a category with confirmation.
+    """
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
         name = category.name
@@ -280,14 +337,19 @@ def category_delete_view(request, pk):
 
 @login_required
 def member_list_view(request):
+    """
+    Lists library members with search and status/type filters.
+    Includes pagination.
+    """
     query = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', '').strip()
     type_filter = request.GET.get('type', '').strip()
+    page_number = request.GET.get('page', 1)
 
-    members = Member.objects.all()
+    members_qs = Member.objects.all()
 
     if query:
-        members = members.filter(
+        members_qs = members_qs.filter(
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
             Q(email__icontains=query) |
@@ -296,13 +358,21 @@ def member_list_view(request):
         )
 
     if status_filter:
-        members = members.filter(status=status_filter)
+        members_qs = members_qs.filter(status=status_filter)
 
     if type_filter:
-        members = members.filter(membership_type=type_filter)
+        members_qs = members_qs.filter(membership_type=type_filter)
+
+    paginator = Paginator(members_qs, 15)
+    try:
+        members_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        members_page = paginator.page(1)
+    except EmptyPage:
+        members_page = paginator.page(paginator.num_pages)
 
     context = {
-        'members': members,
+        'members': members_page,
         'query': query,
         'selected_status': status_filter,
         'selected_type': type_filter,
@@ -312,6 +382,9 @@ def member_list_view(request):
 
 @login_required
 def member_detail_view(request, pk):
+    """
+    Displays full member profile with active loans and past return history.
+    """
     member = get_object_or_404(Member, pk=pk)
     borrow_records = member.borrow_records.select_related('book').order_by('-created_at')
     active_borrows = borrow_records.filter(status='Borrowed')
@@ -328,6 +401,9 @@ def member_detail_view(request, pk):
 
 @login_required
 def member_create_view(request):
+    """
+    Registers a new patron/member in the library system.
+    """
     if request.method == 'POST':
         form = MemberForm(request.POST)
         if form.is_valid():
@@ -344,6 +420,9 @@ def member_create_view(request):
 
 @login_required
 def member_update_view(request, pk):
+    """
+    Updates an existing member's information.
+    """
     member = get_object_or_404(Member, pk=pk)
     if request.method == 'POST':
         form = MemberForm(request.POST, instance=member)
@@ -361,6 +440,9 @@ def member_update_view(request, pk):
 
 @login_required
 def member_delete_view(request, pk):
+    """
+    Deletes a member with confirmation.
+    """
     member = get_object_or_404(Member, pk=pk)
     if request.method == 'POST':
         name = member.full_name
@@ -371,20 +453,24 @@ def member_delete_view(request, pk):
 
 
 # ==============================================================================
-# BORROW & RETURN OPERATIONS
+# BORROW & RETURN OPERATIONS (TRANSACTION SAFE)
 # ==============================================================================
 
 @login_required
 def borrow_list_view(request):
+    """
+    Lists circulation records with filters (borrowed, returned, overdue) and search.
+    """
     query = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', '').strip()
+    page_number = request.GET.get('page', 1)
 
-    borrows = BorrowRecord.objects.select_related('book', 'member', 'issued_by').all()
+    borrows_qs = BorrowRecord.objects.select_related('book', 'member', 'issued_by').all()
 
     today = date.today()
 
     if query:
-        borrows = borrows.filter(
+        borrows_qs = borrows_qs.filter(
             Q(book__title__icontains=query) |
             Q(book__isbn__icontains=query) |
             Q(member__first_name__icontains=query) |
@@ -393,14 +479,22 @@ def borrow_list_view(request):
         )
 
     if status_filter == 'borrowed':
-        borrows = borrows.filter(status='Borrowed', due_date__gte=today)
+        borrows_qs = borrows_qs.filter(status='Borrowed', due_date__gte=today)
     elif status_filter == 'returned':
-        borrows = borrows.filter(status='Returned')
+        borrows_qs = borrows_qs.filter(status='Returned')
     elif status_filter == 'overdue':
-        borrows = borrows.filter(status='Borrowed', due_date__lt=today)
+        borrows_qs = borrows_qs.filter(status='Borrowed', due_date__lt=today)
+
+    paginator = Paginator(borrows_qs, 15)
+    try:
+        borrows_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        borrows_page = paginator.page(1)
+    except EmptyPage:
+        borrows_page = paginator.page(paginator.num_pages)
 
     context = {
-        'borrows': borrows,
+        'borrows': borrows_page,
         'query': query,
         'selected_status': status_filter,
         'today': today,
@@ -409,7 +503,12 @@ def borrow_list_view(request):
 
 
 @login_required
+@transaction.atomic
 def borrow_create_view(request):
+    """
+    Issues a book to a member safely within a database transaction.
+    Locks the book row to prevent race conditions during copy reduction.
+    """
     book_id = request.GET.get('book_id')
     member_id = request.GET.get('member_id')
 
@@ -417,7 +516,9 @@ def borrow_create_view(request):
         form = BorrowBookForm(request.POST)
         if form.is_valid():
             borrow_record = form.save(commit=False)
-            book = borrow_record.book
+            
+            # Select book with row locking for safe concurrency
+            book = Book.objects.select_for_update().get(pk=borrow_record.book.pk)
 
             if book.available_copies <= 0:
                 messages.error(request, f"Cannot issue '{book.title}': No available copies left in library.")
@@ -425,7 +526,7 @@ def borrow_create_view(request):
 
             # Deduct 1 available copy
             book.available_copies -= 1
-            book.save()
+            book.save(update_fields=['available_copies', 'updated_at'])
 
             borrow_record.issued_by = request.user
             borrow_record.status = 'Borrowed'
@@ -453,7 +554,12 @@ def borrow_create_view(request):
 
 
 @login_required
+@transaction.atomic
 def borrow_return_view(request, pk):
+    """
+    Processes book return safely within a database transaction.
+    Restores the book's stock and updates fine amount.
+    """
     borrow_record = get_object_or_404(BorrowRecord.objects.select_related('book', 'member'), pk=pk)
 
     if borrow_record.status == 'Returned':
@@ -472,11 +578,11 @@ def borrow_return_view(request, pk):
                 record.return_date = today
             record.save()
 
-            # Increase available copies of the book
-            book = record.book
+            # Increase available copies of the book with row locking
+            book = Book.objects.select_for_update().get(pk=record.book.pk)
             if book.available_copies < book.total_copies:
                 book.available_copies += 1
-                book.save()
+                book.save(update_fields=['available_copies', 'updated_at'])
 
             messages.success(
                 request,
@@ -507,5 +613,8 @@ def borrow_return_view(request, pk):
 
 @login_required
 def borrow_detail_view(request, pk):
+    """
+    Displays full details of a specific circulation record.
+    """
     record = get_object_or_404(BorrowRecord.objects.select_related('book', 'member', 'issued_by'), pk=pk)
     return render(request, 'borrows/borrow_detail.html', {'record': record})
