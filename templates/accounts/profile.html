@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">Librarian Profile <small>Account Information</small></h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <span>Profile</span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 col-md-5 mb-4">
+        <div class="lms-card text-center p-4">
+            <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 90px; height: 90px; font-size: 3rem;">
+                <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <h4 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h4>
+            <span class="badge bg-success mb-3">Librarian / Staff</span>
+            <p class="text-muted small mb-3">Responsible for book registration, member management, and loan circulation.</p>
+            <div class="border-top pt-3 text-start small text-muted">
+                <div class="mb-2"><i class="fa-solid fa-calendar me-2"></i>Date Joined: <strong>{{ user.date_joined|date:"M d, Y" }}</strong></div>
+                <div><i class="fa-solid fa-clock me-2"></i>Last Login: <strong>{{ user.last_login|date:"M d, Y H:i"|default:"Recently" }}</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 col-md-7">
+        <div class="lms-card">
+            <div class="lms-card-header">
+                <h5 class="lms-card-title"><i class="fa-solid fa-circle-user text-primary"></i> Account Details</h5>
+            </div>
+            <div class="lms-card-body">
+                <div class="row mb-3 pb-3 border-bottom">
+                    <div class="col-sm-4 text-muted fw-semibold">Username</div>
+                    <div class="col-sm-8 fw-bold">{{ user.username }}</div>
+                </div>
+                <div class="row mb-3 pb-3 border-bottom">
+                    <div class="col-sm-4 text-muted fw-semibold">First Name</div>
+                    <div class="col-sm-8">{{ user.first_name|default:"Not specified" }}</div>
+                </div>
+                <div class="row mb-3 pb-3 border-bottom">
+                    <div class="col-sm-4 text-muted fw-semibold">Last Name</div>
+                    <div class="col-sm-8">{{ user.last_name|default:"Not specified" }}</div>
+                </div>
+                <div class="row mb-3 pb-3 border-bottom">
+                    <div class="col-sm-4 text-muted fw-semibold">Email Address</div>
+                    <div class="col-sm-8">{{ user.email|default:"Not specified" }}</div>
+                </div>
+                <div class="row mb-3 pb-3 border-bottom">
+                    <div class="col-sm-4 text-muted fw-semibold">Staff Status</div>
+                    <div class="col-sm-8">
+                        {% if user.is_staff %}
+                        <span class="badge bg-primary">Staff Member</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Standard Member</span>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <span class="badge bg-danger ms-1">Superuser</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-2 d-flex gap-2">
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fa-solid fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                    {% if user.is_staff %}
+                    <a href="{% url 'admin:index' %}" target="_blank" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-sliders me-1"></i>Django Admin Panel
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
