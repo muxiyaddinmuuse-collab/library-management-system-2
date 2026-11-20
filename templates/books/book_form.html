@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">{{ title }}</h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <a href="{% url 'book_list' %}">Books</a>
+        <span>/</span>
+        <span>{{ action }}</span>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="lms-card">
+            <div class="lms-card-header">
+                <h5 class="lms-card-title">
+                    <i class="fa-solid fa-book text-primary"></i>
+                    {% if action == 'Create' %}Register New Book in Library{% else %}Edit Book Information{% endif %}
+                </h5>
+                <a href="{% url 'book_list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa-solid fa-arrow-left me-1"></i>Back to Books
+                </a>
+            </div>
+
+            <div class="lms-card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3 mb-3">
+                        <!-- Title -->
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold text-secondary small">BOOK TITLE <span class="text-danger">*</span></label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Author -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary small">AUTHOR <span class="text-danger">*</span></label>
+                            {{ form.author }}
+                            {% if form.author.errors %}
+                                <div class="text-danger small mt-1">{{ form.author.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <!-- ISBN -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary small">ISBN NUMBER <span class="text-danger">*</span></label>
+                            {{ form.isbn }}
+                            {% if form.isbn.errors %}
+                                <div class="text-danger small mt-1">{{ form.isbn.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Category -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary small">CATEGORY <span class="text-danger">*</span></label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Shelf Location -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary small">SHELF / LOCATION</label>
+                            {{ form.location_shelf }}
+                            {% if form.location_shelf.errors %}
+                                <div class="text-danger small mt-1">{{ form.location_shelf.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <!-- Total Copies -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary small">TOTAL COPIES <span class="text-danger">*</span></label>
+                            {{ form.total_copies }}
+                            {% if form.total_copies.errors %}
+                                <div class="text-danger small mt-1">{{ form.total_copies.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Available Copies -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary small">AVAILABLE COPIES <span class="text-danger">*</span></label>
+                            {{ form.available_copies }}
+                            {% if form.available_copies.errors %}
+                                <div class="text-danger small mt-1">{{ form.available_copies.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Publication Year -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary small">PUBLICATION YEAR</label>
+                            {{ form.publication_year }}
+                            {% if form.publication_year.errors %}
+                                <div class="text-danger small mt-1">{{ form.publication_year.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary small">BOOK SUMMARY / DESCRIPTION</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <a href="{% url 'book_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary" style="background-color: #0b2d42; border-color: #0b2d42;">
+                            <i class="fa-solid fa-floppy-disk me-1"></i>Save Book Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

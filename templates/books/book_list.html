@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Books Catalog{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">Book Management <small>Catalog & Inventory</small></h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <span>Books</span>
+    </div>
+</div>
+
+<!-- SEARCH & FILTER TOOLBAR -->
+<div class="lms-card mb-4">
+    <div class="lms-card-body">
+        <form method="get" action="{% url 'book_list' %}" class="row g-3 align-items-end">
+            <!-- Search Query (Title / Author / ISBN) -->
+            <div class="col-lg-5 col-md-6">
+                <label class="form-label small fw-semibold text-secondary">SEARCH BY TITLE OR AUTHOR OR ISBN</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search books by title, author, or ISBN...">
+                </div>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-lg-3 col-md-3">
+                <label class="form-label small fw-semibold text-secondary">FILTER BY CATEGORY</label>
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.name }} ({{ cat.books_count }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-lg-2 col-md-3">
+                <label class="form-label small fw-semibold text-secondary">AVAILABILITY</label>
+                <select name="status" class="form-select">
+                    <option value="">All</option>
+                    <option value="available" {% if selected_status == 'available' %}selected{% endif %}>Available</option>
+                    <option value="out_of_stock" {% if selected_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                </select>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-lg-2 col-md-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1" style="background-color: #0b2d42; border-color: #0b2d42;">
+                    <i class="fa-solid fa-filter me-1"></i>Filter
+                </button>
+                {% if query or selected_category or selected_status %}
+                <a href="{% url 'book_list' %}" class="btn btn-outline-secondary" title="Reset Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BOOKS TABLE CARD -->
+<div class="lms-card">
+    <div class="lms-card-header">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="lms-card-title"><i class="fa-solid fa-book-open text-primary"></i> Registered Books</h5>
+            <span class="badge bg-secondary rounded-pill">{{ total_results }} found</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'category_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-layer-group me-1"></i>Categories
+            </a>
+            <a href="{% url 'book_create' %}" class="btn btn-success btn-sm">
+                <i class="fa-solid fa-plus me-1"></i>Register New Book
+            </a>
+        </div>
+    </div>
+
+    <div class="lms-card-body p-0">
+        <div class="table-responsive">
+            <table class="table lms-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Title & Details</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>ISBN</th>
+                        <th>Shelf</th>
+                        <th class="text-center">Stock</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in books %}
+                    <tr>
+                        <td class="text-muted small">{{ forloop.counter }}</td>
+                        <td>
+                            <a href="{% url 'book_detail' book.pk %}" class="fw-bold text-dark text-decoration-none">
+                                {{ book.title }}
+                            </a>
+                            {% if book.publication_year %}
+                            <small class="text-muted d-block">Published: {{ book.publication_year }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ book.author }}</td>
+                        <td>
+                            <span class="badge bg-light text-secondary border">
+                                {{ book.category.name }}
+                            </span>
+                        </td>
+                        <td><code class="text-dark">{{ book.isbn }}</code></td>
+                        <td><small class="text-muted">{{ book.location_shelf|default:"-" }}</small></td>
+                        <td class="text-center">
+                            {% if book.available_copies > 0 %}
+                            <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1">
+                                {{ book.available_copies }} / {{ book.total_copies }} Available
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger fw-bold px-2 py-1">
+                                0 / {{ book.total_copies }} (Borrowed)
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                {% if book.available_copies > 0 %}
+                                <a href="{% url 'borrow_create' %}?book_id={{ book.pk }}" class="btn btn-outline-success" title="Issue this book">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-info" title="View details">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                <a href="{% url 'book_update' book.pk %}" class="btn btn-outline-warning" title="Edit book">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <a href="{% url 'book_delete' book.pk %}" class="btn btn-outline-danger" title="Delete book">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-book-open-reader fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                            <h5>No books found matching your criteria</h5>
+                            <p class="small mb-3">Try adjusting your search terms or register a new book in the system.</p>
+                            <a href="{% url 'book_create' %}" class="btn btn-primary btn-sm" style="background-color: #0b2d42; border-color: #0b2d42;">
+                                <i class="fa-solid fa-plus me-1"></i>Register New Book
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
