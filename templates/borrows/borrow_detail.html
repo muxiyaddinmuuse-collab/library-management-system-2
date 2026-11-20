@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Loan Transaction Details{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">Circulation Record <small>Loan #{{ record.pk }}</small></h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <a href="{% url 'borrow_list' %}">Issued Books</a>
+        <span>/</span>
+        <span>Details</span>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="lms-card">
+            <div class="lms-card-header">
+                <h5 class="lms-card-title"><i class="fa-solid fa-receipt text-primary"></i> Circulation Transaction Details</h5>
+                {% if record.status == 'Borrowed' %}
+                <a href="{% url 'borrow_return' record.pk %}" class="btn btn-success btn-sm">
+                    <i class="fa-solid fa-rotate-left me-1"></i>Process Return
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="lms-card-body">
+                <div class="row g-4 mb-4">
+                    <!-- Book Info -->
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-book me-2"></i>Book Details</h6>
+                            <h5 class="fw-bold">{{ record.book.title }}</h5>
+                            <div class="small text-muted mb-2">Author: <strong>{{ record.book.author }}</strong></div>
+                            <div class="small text-muted mb-2">ISBN: <code>{{ record.book.isbn }}</code></div>
+                            <div class="small text-muted mb-2">Category: <span class="badge bg-secondary">{{ record.book.category.name }}</span></div>
+                            <div class="small text-muted">Shelf Location: {{ record.book.location_shelf|default:"Not specified" }}</div>
+                            <div class="mt-3">
+                                <a href="{% url 'book_detail' record.book.pk %}" class="btn btn-sm btn-outline-primary">View Full Book Profile</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Member Info -->
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-user me-2"></i>Member Details</h6>
+                            <h5 class="fw-bold">{{ record.member.full_name }}</h5>
+                            <div class="small text-muted mb-2">Member ID: <code class="text-primary fw-bold">{{ record.member.member_id }}</code></div>
+                            <div class="small text-muted mb-2">Email: {{ record.member.email }}</div>
+                            <div class="small text-muted mb-2">Phone: {{ record.member.phone }}</div>
+                            <div class="small text-muted">Type: {{ record.member.membership_type }}</div>
+                            <div class="mt-3">
+                                <a href="{% url 'member_detail' record.member.pk %}" class="btn btn-sm btn-outline-primary">View Member Profile</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Summary Table -->
+                <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-calendar-days me-2"></i>Loan Schedule & History</h6>
+                <table class="table table-bordered mb-4">
+                    <tbody>
+                        <tr>
+                            <th class="bg-light w-25">Issue Date</th>
+                            <td>{{ record.issue_date|date:"F d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Due Date</th>
+                            <td class="{% if record.is_currently_overdue %}text-danger fw-bold{% endif %}">
+                                {{ record.due_date|date:"F d, Y" }}
+                                {% if record.is_currently_overdue %}
+                                <span class="badge badge-lms-overdue ms-2">{{ record.days_overdue }} days overdue</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Return Date</th>
+                            <td>
+                                {% if record.return_date %}
+                                {{ record.return_date|date:"F d, Y" }}
+                                {% else %}
+                                <span class="text-warning fw-semibold">Not returned yet</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Status</th>
+                            <td>
+                                {% if record.status == 'Returned' %}
+                                <span class="badge badge-lms-returned">Returned</span>
+                                {% elif record.is_currently_overdue %}
+                                <span class="badge badge-lms-overdue">Overdue</span>
+                                {% else %}
+                                <span class="badge badge-lms-active">Borrowed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Fine Amount</th>
+                            <td>
+                                {% if record.fine_amount > 0 %}
+                                <strong class="text-danger">${{ record.fine_amount }}</strong>
+                                {% else %}
+                                <span class="text-muted">$0.00</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Issued By (Staff)</th>
+                            <td>{{ record.issued_by.username|default:"System Admin" }}</td>
+                        </tr>
+                        {% if record.notes %}
+                        <tr>
+                            <th class="bg-light">Notes</th>
+                            <td>{{ record.notes }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'borrow_list' %}" class="btn btn-outline-secondary">
+                        <i class="fa-solid fa-arrow-left me-1"></i>Back to Borrow List
+                    </a>
+                    {% if record.status == 'Borrowed' %}
+                    <a href="{% url 'borrow_return' record.pk %}" class="btn btn-success">
+                        <i class="fa-solid fa-rotate-left me-1"></i>Return This Book
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
