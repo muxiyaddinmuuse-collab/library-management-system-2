@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}Library Members{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">Member Management <small>Patrons & Students</small></h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <span>Members</span>
+    </div>
+</div>
+
+<!-- SEARCH & FILTER TOOLBAR -->
+<div class="lms-card mb-4">
+    <div class="lms-card-body">
+        <form method="get" action="{% url 'member_list' %}" class="row g-3 align-items-end">
+            <!-- Search Query -->
+            <div class="col-lg-5 col-md-6">
+                <label class="form-label small fw-semibold text-secondary">SEARCH MEMBER</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by name, ID, email, phone...">
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-lg-3 col-md-3">
+                <label class="form-label small fw-semibold text-secondary">STATUS</label>
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Inactive" {% if selected_status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="Suspended" {% if selected_status == 'Suspended' %}selected{% endif %}>Suspended</option>
+                </select>
+            </div>
+
+            <!-- Type Filter -->
+            <div class="col-lg-2 col-md-3">
+                <label class="form-label small fw-semibold text-secondary">TYPE</label>
+                <select name="type" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="Student" {% if selected_type == 'Student' %}selected{% endif %}>Student</option>
+                    <option value="Teacher" {% if selected_type == 'Teacher' %}selected{% endif %}>Teacher</option>
+                    <option value="Staff" {% if selected_type == 'Staff' %}selected{% endif %}>Staff</option>
+                    <option value="General" {% if selected_type == 'General' %}selected{% endif %}>General</option>
+                </select>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="col-lg-2 col-md-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1" style="background-color: #0b2d42; border-color: #0b2d42;">
+                    <i class="fa-solid fa-filter me-1"></i>Filter
+                </button>
+                {% if query or selected_status or selected_type %}
+                <a href="{% url 'member_list' %}" class="btn btn-outline-secondary" title="Clear">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MEMBERS TABLE -->
+<div class="lms-card">
+    <div class="lms-card-header">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="lms-card-title"><i class="fa-solid fa-users text-primary"></i> Registered Library Members</h5>
+            <span class="badge bg-secondary rounded-pill">{{ members.count }} Member(s)</span>
+        </div>
+        <a href="{% url 'member_create' %}" class="btn btn-success btn-sm">
+            <i class="fa-solid fa-user-plus me-1"></i>Register New Member
+        </a>
+    </div>
+
+    <div class="lms-card-body p-0">
+        <div class="table-responsive">
+            <table class="table lms-table">
+                <thead>
+                    <tr>
+                        <th>Member ID</th>
+                        <th>Full Name</th>
+                        <th>Contact</th>
+                        <th>Type</th>
+                        <th>Active Borrows</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                    <tr>
+                        <td>
+                            <code class="fw-bold text-primary">{{ member.member_id }}</code>
+                        </td>
+                        <td>
+                            <a href="{% url 'member_detail' member.pk %}" class="fw-bold text-dark text-decoration-none">
+                                {{ member.full_name }}
+                            </a>
+                        </td>
+                        <td>
+                            <div><i class="fa-solid fa-envelope me-1 text-muted small"></i>{{ member.email }}</div>
+                            <small class="text-muted"><i class="fa-solid fa-phone me-1 text-muted"></i>{{ member.phone }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ member.membership_type }}</span>
+                        </td>
+                        <td>
+                            {% if member.active_borrow_count > 0 %}
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-bold">
+                                {{ member.active_borrow_count }} borrowed
+                            </span>
+                            {% else %}
+                            <span class="badge bg-light text-muted border">None</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if member.status == 'Active' %}
+                            <span class="badge badge-lms-active">Active</span>
+                            {% elif member.status == 'Inactive' %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% else %}
+                            <span class="badge badge-lms-overdue">Suspended</span>
+                            {% endif %}
+                        </td>
+                        <td><small class="text-muted">{{ member.registered_date|date:"M d, Y" }}</small></td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                {% if member.status == 'Active' %}
+                                <a href="{% url 'borrow_create' %}?member_id={{ member.pk }}" class="btn btn-outline-success" title="Issue Book">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'member_detail' member.pk %}" class="btn btn-outline-info" title="View Profile">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                <a href="{% url 'member_update' member.pk %}" class="btn btn-outline-warning" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <a href="{% url 'member_delete' member.pk %}" class="btn btn-outline-danger" title="Delete">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-user-slash fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                            <h5>No library members found</h5>
+                            <p class="small mb-3">Add new student or teacher library cards to issue books.</p>
+                            <a href="{% url 'member_create' %}" class="btn btn-primary btn-sm" style="background-color: #0b2d42; border-color: #0b2d42;">
+                                <i class="fa-solid fa-user-plus me-1"></i>Register New Member
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
