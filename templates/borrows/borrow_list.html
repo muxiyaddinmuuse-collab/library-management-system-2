@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Issued & Borrowed Books{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">Circulation & Loan Tracking <small>Issued & Borrowed Books</small></h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <span>Issued Books</span>
+    </div>
+</div>
+
+<!-- SEARCH & FILTER -->
+<div class="lms-card mb-4">
+    <div class="lms-card-body">
+        <form method="get" action="{% url 'borrow_list' %}" class="row g-3 align-items-end">
+            <div class="col-lg-6 col-md-6">
+                <label class="form-label small fw-semibold text-secondary">SEARCH TRANSACTIONS</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by book title, member name, ID, or ISBN...">
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-3">
+                <label class="form-label small fw-semibold text-secondary">CIRCULATION STATUS</label>
+                <select name="status" class="form-select">
+                    <option value="">All Records</option>
+                    <option value="borrowed" {% if selected_status == 'borrowed' %}selected{% endif %}>Currently Borrowed</option>
+                    <option value="overdue" {% if selected_status == 'overdue' %}selected{% endif %}>Overdue Books</option>
+                    <option value="returned" {% if selected_status == 'returned' %}selected{% endif %}>Returned</option>
+                </select>
+            </div>
+
+            <div class="col-lg-3 col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1" style="background-color: #0b2d42; border-color: #0b2d42;">
+                    <i class="fa-solid fa-filter me-1"></i>Filter
+                </button>
+                {% if query or selected_status %}
+                <a href="{% url 'borrow_list' %}" class="btn btn-outline-secondary" title="Reset">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BORROW RECORDS TABLE -->
+<div class="lms-card">
+    <div class="lms-card-header">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="lms-card-title"><i class="fa-solid fa-list-check text-primary"></i> Circulation Records</h5>
+            <span class="badge bg-secondary rounded-pill">{{ borrows.count }} record(s)</span>
+        </div>
+        <a href="{% url 'borrow_create' %}" class="btn btn-success btn-sm">
+            <i class="fa-solid fa-paper-plane me-1"></i>Issue New Book
+        </a>
+    </div>
+
+    <div class="lms-card-body p-0">
+        <div class="table-responsive">
+            <table class="table lms-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Book Information</th>
+                        <th>Borrower Member</th>
+                        <th>Issue Date</th>
+                        <th>Due Date</th>
+                        <th>Return Date</th>
+                        <th>Fine</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in borrows %}
+                    <tr class="{% if rec.is_currently_overdue %}table-danger bg-opacity-25{% endif %}">
+                        <td class="text-muted small">{{ forloop.counter }}</td>
+                        <td>
+                            <a href="{% url 'book_detail' rec.book.pk %}" class="fw-bold text-dark text-decoration-none">
+                                {{ rec.book.title }}
+                            </a>
+                            <small class="d-block text-muted">Author: {{ rec.book.author }} | ISBN: {{ rec.book.isbn }}</small>
+                        </td>
+                        <td>
+                            <a href="{% url 'member_detail' rec.member.pk %}" class="fw-semibold text-decoration-none">
+                                {{ rec.member.full_name }}
+                            </a>
+                            <small class="d-block text-muted">{{ rec.member.member_id }} ({{ rec.member.phone }})</small>
+                        </td>
+                        <td>{{ rec.issue_date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="{% if rec.is_currently_overdue %}text-danger fw-bold{% endif %}">
+                                {{ rec.due_date|date:"M d, Y" }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if rec.return_date %}
+                            {{ rec.return_date|date:"M d, Y" }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rec.fine_amount > 0 %}
+                            <span class="text-danger fw-bold">${{ rec.fine_amount }}</span>
+                            {% elif rec.is_currently_overdue %}
+                            <span class="text-danger small fw-semibold">Est. ${{ rec.compute_fine }}</span>
+                            {% else %}
+                            <span class="text-muted">$0.00</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rec.status == 'Returned' %}
+                            <span class="badge badge-lms-returned">Returned</span>
+                            {% elif rec.is_currently_overdue %}
+                            <span class="badge badge-lms-overdue">Overdue ({{ rec.days_overdue }}d)</span>
+                            {% else %}
+                            <span class="badge badge-lms-active">Borrowed</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                {% if rec.status == 'Borrowed' %}
+                                <a href="{% url 'borrow_return' rec.pk %}" class="btn btn-outline-success" title="Process Return">
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Return
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'borrow_detail' rec.pk %}" class="btn btn-outline-secondary" title="View Details">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-book-bookmark fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                            <h5>No circulation records found</h5>
+                            <p class="small mb-3">Issue a book from the catalog to start tracking borrowing transactions.</p>
+                            <a href="{% url 'borrow_create' %}" class="btn btn-primary btn-sm" style="background-color: #0b2d42; border-color: #0b2d42;">
+                                <i class="fa-solid fa-paper-plane me-1"></i>Issue Book Now
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
