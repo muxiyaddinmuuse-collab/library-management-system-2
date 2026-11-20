@@ -126,13 +126,13 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            <div class="btn-group btn-group-sm">
+                            <div class="lms-action-group">
                                 {% if rec.status == 'Borrowed' %}
-                                <a href="{% url 'borrow_return' rec.pk %}" class="btn btn-outline-success" title="Process Return">
-                                    <i class="fa-solid fa-rotate-left me-1"></i>Return
+                                <a href="{% url 'borrow_return' rec.pk %}" class="btn-action-pill btn-action-issue" data-bs-toggle="tooltip" data-bs-placement="top" title="Process Book Return">
+                                    <i class="fa-solid fa-rotate-left"></i>
                                 </a>
                                 {% endif %}
-                                <a href="{% url 'borrow_detail' rec.pk %}" class="btn btn-outline-secondary" title="View Details">
+                                <a href="{% url 'borrow_detail' rec.pk %}" class="btn-action-pill btn-action-view" data-bs-toggle="tooltip" data-bs-placement="top" title="View Transaction Details">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
                             </div>

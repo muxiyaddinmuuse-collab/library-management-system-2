@@ -130,20 +130,20 @@
                         </td>
                         <td><small class="text-muted">{{ member.registered_date|date:"M d, Y" }}</small></td>
                         <td class="text-end">
-                            <div class="btn-group btn-group-sm">
+                            <div class="lms-action-group">
                                 {% if member.status == 'Active' %}
-                                <a href="{% url 'borrow_create' %}?member_id={{ member.pk }}" class="btn btn-outline-success" title="Issue Book">
+                                <a href="{% url 'borrow_create' %}?member_id={{ member.pk }}" class="btn-action-pill btn-action-issue" data-bs-toggle="tooltip" data-bs-placement="top" title="Issue Book">
                                     <i class="fa-solid fa-paper-plane"></i>
                                 </a>
                                 {% endif %}
-                                <a href="{% url 'member_detail' member.pk %}" class="btn btn-outline-info" title="View Profile">
+                                <a href="{% url 'member_detail' member.pk %}" class="btn-action-pill btn-action-view" data-bs-toggle="tooltip" data-bs-placement="top" title="View Profile">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <a href="{% url 'member_update' member.pk %}" class="btn btn-outline-warning" title="Edit">
+                                <a href="{% url 'member_update' member.pk %}" class="btn-action-pill btn-action-edit" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Member">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
-                                <a href="{% url 'member_delete' member.pk %}" class="btn btn-outline-danger" title="Delete">
-                                    <i class="fa-solid fa-trash"></i>
+                                <a href="{% url 'member_delete' member.pk %}" class="btn-action-pill btn-action-delete" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Member">
+                                    <i class="fa-solid fa-trash-can"></i>
                                 </a>
                             </div>
                         </td>

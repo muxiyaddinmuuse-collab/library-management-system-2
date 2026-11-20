@@ -444,3 +444,86 @@ body {
         padding: 1rem;
     }
 }
+
+/* ==========================================================================
+   Modern Table Action Buttons (Issue, View, Edit, Delete)
+   ========================================================================== */
+.lms-action-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+}
+
+.btn-action-pill {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    text-decoration: none !important;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-action-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btn-action-pill:active {
+    transform: translateY(0);
+}
+
+/* Issue Action (Green soft) */
+.btn-action-issue {
+    background-color: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+.btn-action-issue:hover {
+    background-color: #059669;
+    color: #ffffff;
+    border-color: #059669;
+}
+
+/* View Action (Blue soft) */
+.btn-action-view {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+.btn-action-view:hover {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+/* Edit Action (Amber soft) */
+.btn-action-edit {
+    background-color: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+.btn-action-edit:hover {
+    background-color: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+}
+
+/* Delete Action (Red soft) */
+.btn-action-delete {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+.btn-action-delete:hover {
+    background-color: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+}
+

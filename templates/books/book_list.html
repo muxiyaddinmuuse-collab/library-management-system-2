@@ -129,20 +129,20 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            <div class="btn-group btn-group-sm">
+                            <div class="lms-action-group">
                                 {% if book.available_copies > 0 %}
-                                <a href="{% url 'borrow_create' %}?book_id={{ book.pk }}" class="btn btn-outline-success" title="Issue this book">
+                                <a href="{% url 'borrow_create' %}?book_id={{ book.pk }}" class="btn-action-pill btn-action-issue" data-bs-toggle="tooltip" data-bs-placement="top" title="Issue Book">
                                     <i class="fa-solid fa-paper-plane"></i>
                                 </a>
                                 {% endif %}
-                                <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-info" title="View details">
+                                <a href="{% url 'book_detail' book.pk %}" class="btn-action-pill btn-action-view" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <a href="{% url 'book_update' book.pk %}" class="btn btn-outline-warning" title="Edit book">
+                                <a href="{% url 'book_update' book.pk %}" class="btn-action-pill btn-action-edit" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Book">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
-                                <a href="{% url 'book_delete' book.pk %}" class="btn btn-outline-danger" title="Delete book">
-                                    <i class="fa-solid fa-trash"></i>
+                                <a href="{% url 'book_delete' book.pk %}" class="btn-action-pill btn-action-delete" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Book">
+                                    <i class="fa-solid fa-trash-can"></i>
                                 </a>
                             </div>
                         </td>
