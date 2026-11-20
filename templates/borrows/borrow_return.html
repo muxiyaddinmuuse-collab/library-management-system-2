@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="lms-page-header">
+    <div>
+        <h1 class="lms-page-title">Return Book <small>Circulation Check-in</small></h1>
+    </div>
+    <div class="lms-breadcrumb">
+        <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span>/</span>
+        <a href="{% url 'borrow_list' %}">Issued Books</a>
+        <span>/</span>
+        <span>Return</span>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="lms-card">
+            <div class="lms-card-header bg-success text-white">
+                <h5 class="lms-card-title text-white mb-0">
+                    <i class="fa-solid fa-rotate-left me-2"></i>Process Book Return
+                </h5>
+            </div>
+
+            <div class="lms-card-body">
+                <!-- Loan Summary -->
+                <div class="p-3 bg-light rounded border mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-7 border-end">
+                            <span class="text-muted small">Book Title</span>
+                            <h5 class="fw-bold text-dark mb-1">{{ record.book.title }}</h5>
+                            <small class="text-muted d-block">Author: {{ record.book.author }} | ISBN: {{ record.book.isbn }}</small>
+                            <small class="text-muted">Shelf: {{ record.book.location_shelf|default:"-" }}</small>
+                        </div>
+                        <div class="col-md-5 ps-md-3 mt-3 mt-md-0">
+                            <span class="text-muted small">Borrower Member</span>
+                            <div class="fw-bold text-dark">{{ record.member.full_name }}</div>
+                            <small class="text-muted d-block">ID: {{ record.member.member_id }}</small>
+                            <small class="text-muted">Phone: {{ record.member.phone }}</small>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3 pt-3 border-top text-center">
+                        <div class="col-4">
+                            <small class="text-muted d-block">Issued Date</small>
+                            <strong>{{ record.issue_date|date:"M d, Y" }}</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Due Date</small>
+                            <strong class="{% if record.is_currently_overdue %}text-danger{% endif %}">
+                                {{ record.due_date|date:"M d, Y" }}
+                            </strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Overdue Status</small>
+                            {% if record.is_currently_overdue %}
+                            <span class="badge badge-lms-overdue">{{ days_overdue }} days overdue</span>
+                            {% else %}
+                            <span class="badge badge-lms-active">On Time</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if days_overdue > 0 %}
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+                    <i class="fa-solid fa-triangle-exclamation fs-4"></i>
+                    <div>
+                        <strong>Book is Overdue by {{ days_overdue }} days!</strong>
+                        <div>Standard late fee is $1.00/day. Suggested fine is <strong>${{ calculated_fine }}</strong>.</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary small">RETURN DATE <span class="text-danger">*</span></label>
+                            {{ form.return_date }}
+                            {% if form.return_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.return_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary small">FINE AMOUNT ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.fine_amount }}
+                            </div>
+                            {% if form.fine_amount.errors %}
+                                <div class="text-danger small mt-1">{{ form.fine_amount.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Enter 0 if no fine is assessed.</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary small">RETURN NOTES (BOOK CONDITION, ETC.)</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <a href="{% url 'borrow_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa-solid fa-circle-check me-1"></i>Confirm Book Return
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
