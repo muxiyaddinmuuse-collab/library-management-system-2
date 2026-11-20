@@ -456,6 +456,76 @@ body {
 }
 
 .btn-action-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 2rem; /* pill shape */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Specific button colors (keep existing palette) */
+/* Issue Action (Green soft) */
+.btn-action-issue {
+    background-color: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+/* No hover colour change – keep base style */
+.btn-action-issue:hover {
+    background-color: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* View Action (Blue soft) */
+.btn-action-view {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+/* No hover colour change – keep base style */
+.btn-action-view:hover {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Edit Action (Amber soft) */
+.btn-action-edit {
+    background-color: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+/* No hover colour change – keep base style */
+.btn-action-edit:hover {
+    background-color: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Delete Action (Red soft) */
+.btn-action-delete {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+/* No hover colour change – keep base style */
+.btn-action-delete:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
     width: 32px;
     height: 32px;
     padding: 0;
@@ -485,11 +555,14 @@ body {
     color: #059669;
     border-color: #a7f3d0;
 }
+/* No hover colour change – keep base style */
 .btn-action-issue:hover {
-    background-color: #059669;
-    color: #ffffff;
-    border-color: #059669;
+    background-color: #ecfdf5; /* same as base */
+    color: #059669;
+    border-color: #a7f3d0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
 
 /* View Action (Blue soft) */
 .btn-action-view {
@@ -497,10 +570,12 @@ body {
     color: #2563eb;
     border-color: #bfdbfe;
 }
+/* No hover colour change – keep base style */
 .btn-action-view:hover {
-    background-color: #2563eb;
-    color: #ffffff;
-    border-color: #2563eb;
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Edit Action (Amber soft) */
@@ -509,10 +584,12 @@ body {
     color: #d97706;
     border-color: #fde68a;
 }
+/* No hover colour change – keep base style */
 .btn-action-edit:hover {
-    background-color: #d97706;
-    color: #ffffff;
-    border-color: #d97706;
+    background-color: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Delete Action (Red soft) */
@@ -521,9 +598,11 @@ body {
     color: #dc2626;
     border-color: #fecaca;
 }
+/* No hover colour change – keep base style */
 .btn-action-delete:hover {
-    background-color: #dc2626;
-    color: #ffffff;
-    border-color: #dc2626;
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
